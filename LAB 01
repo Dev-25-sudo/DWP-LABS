@@ -1,0 +1,92 @@
+import pandas as pd
+import json
+import requests
+import sqlite3
+
+# --- Cell 1: Reading and Printing CSV Data ---
+# Create sample CSV
+with open("students.csv", "w") as f:
+    f.write("Name,Age,Department,Marks\nPriya,20,CSE,78\nRohit,22,ME,85\nAnita,21,IT,91")
+
+# Read CSV into a DataFrame
+df = pd.read_csv("students.csv")
+print(df.head()) # Display first few rows of CSV data
+
+# --- Cell 2: Creating and Reading Excel Data ---
+# Create Excel file from DataFrame (index=False prevents writing the DataFrame index)
+df.to_excel("sales.xlsx", index=False)
+
+# Read Excel file into a new DataFrame
+df_excel = pd.read_excel("sales.xlsx")
+print(df_excel.head()) # Display first few rows of Excel data
+
+# --- Cell 3: Reading and Normalizing JSON Data ---
+sample_data = {"Name": "Riya", "Age": 21, "Department": "CSE"}
+# Write dictionary data to a JSON file
+with open("sample.json", "w") as f:
+    json.dump(sample_data, f)
+
+# Read data from the JSON file
+with open("sample.json", "r") as f:
+    data = json.load(f)
+
+print(data) # Print the raw dictionary data
+
+# Convert the JSON data (dictionary) into a DataFrame
+df_json = pd.json_normalize(data)
+print(df_json) # Display the resulting DataFrame
+
+# --- Cell 4: Exporting DataFrames to Different Formats ---
+# Export DataFrame back to CSV
+df.to_csv("clean_students.csv", index=False)
+# Export DataFrame back to Excel
+df.to_excel("clean_students.xlsx", index=False)
+# Export DataFrame back to JSON (orient="records" produces a list of dicts)
+df.to_json("clean_students.json", orient="records")
+
+# --- Cell 5: Reading HTML Tables from a URL ---
+url = "https://en.wikipedia.org/wiki/List_of_countries_by_population_(United_Nations)"
+
+# Add headers to avoid 403 Forbidden error when requesting the page
+headers = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36"}
+
+# Fetch the page content
+resp = requests.get(url, headers=headers)
+
+# Parse HTML tables from the page text. pd.read_html returns a list of DataFrames.
+# Note: The 'resp.text' is literal HTML content, which might trigger a future deprecation warning.
+tables = pd.read_html(resp.text)
+
+print("Number of tables found:", len(tables))
+
+# Get the first table (assuming it's the target data)
+df = tables[0]
+print(df.head()) # Display first few rows of the DataFrame created from the HTML table
+
+# --- Cell 6 (Execution Count 7): Reading Data from SQLite Database ---
+# Connect to a SQLite database file (creates it if it doesn't exist)
+conn = sqlite3.connect("students.db")
+cursor = conn.cursor()
+
+# Create a table if it doesn't exist
+cursor.execute('''CREATE TABLE IF NOT EXISTS Students (
+    id INTEGER PRIMARY KEY,
+    name TEXT,
+    age INTEGER,
+    dept TEXT,
+    marks INTEGER
+)''')
+conn.commit()
+
+# Sample data to insert
+students = [("Priya",20,"CSE",78), ("Rohit",22,"ME",85), ("Anita",21,"IT",91)]
+# Insert multiple rows into the table
+cursor.executemany("INSERT INTO Students (name,age,dept,marks) VALUES (?,?,?,?)", students)
+conn.commit()
+
+# SQL query to select all data from the Students table
+# The .replace() handles potential non-breaking spaces in environments
+query = "SELECT * FROM Students".replace('\u00a0', ' ')
+# Read the result of the SQL query directly into a DataFrame
+df_sql = pd.read_sql_query(query, conn)
+print(df_sql) # Display the DataFrame from the SQL query
