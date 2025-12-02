@@ -1,0 +1,93 @@
+# Step 1: Import Required Libraries
+import pandas as pd
+# Function to create a synthetic imbalanced dataset
+from sklearn.datasets import make_classification
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+# Metrics for model evaluation
+from sklearn.metrics import classification_report, confusion_matrix
+# Library for handling imbalanced data
+from imblearn.over_sampling import SMOTE
+import matplotlib.pyplot as plt
+
+# -------------------------------------------------------------
+# Step 2: Create a Synthetic Imbalanced Dataset
+# -------------------------------------------------------------
+# Create a dataset with 1000 samples, 5 features, and a 90:10 class imbalance (weights=[0.9, 0.1])
+X, y = make_classification(
+n_samples=1000,
+n_features=5,
+n_informative=3,
+n_redundant=0,
+n_clusters_per_class=1,
+weights=[0.9, 0.1],    # class imbalance ratio
+random_state=42
+)
+# Convert to DataFrame for better visualization
+df = pd.DataFrame(X, columns=[f'Feature_{i}' for i in range(1, 6)])
+df['Target'] = y
+print("----- ORIGINAL CLASS DISTRIBUTION -----")
+print(df['Target'].value_counts())
+# Plot original class distribution plt.figure(figsize=(5,4))
+df['Target'].value_counts().plot(kind='bar', color=['skyblue','orange'])
+plt.title('Original Class Distribution')
+plt.xlabel('Class')
+plt.ylabel('Count')
+plt.show()
+
+# -------------------------------------------------------------
+# Step 3: Split the Data into Train and Test Sets
+# -------------------------------------------------------------
+# Split data into training (70%) and testing (30%) sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# -------------------------------------------------------------
+# Step 4: Train Model on Imbalanced Data (Baseline)
+# -------------------------------------------------------------
+# Train Logistic Regression model on the original, imbalanced training data
+model_imbalanced = LogisticRegression()
+model_imbalanced.fit(X_train, y_train)
+y_pred_imbalanced = model_imbalanced.predict(X_test)
+print("\n----- MODEL PERFORMANCE (Before SMOTE) -----")
+# Confusion Matrix helps visualize True Positives, False Positives, etc.
+print(confusion_matrix(y_test, y_pred_imbalanced))
+# Classification Report provides Precision, Recall, and F1-score for each class
+print(classification_report(y_test, y_pred_imbalanced))
+
+# -------------------------------------------------------------
+# Step 5: Apply SMOTE Oversampling
+# -------------------------------------------------------------
+# SMOTE generates new synthetic samples for the minority class in the training data
+smote = SMOTE(random_state=42)
+X_resampled, y_resampled = smote.fit_resample(X_train, y_train)
+print("\n----- CLASS DISTRIBUTION AFTER SMOTE -----")
+# Verify that the new training data is now balanced
+print(pd.Series(y_resampled).value_counts())
+# Plot balanced class distribution plt.figure(figsize=(5,4))
+pd.Series(y_resampled).value_counts().plot(kind='bar', color=['green','purple'])
+plt.title('Balanced Class Distribution (After SMOTE)')
+plt.xlabel('Class')
+plt.ylabel('Count')
+plt.show()
+
+# -------------------------------------------------------------
+# Step 6: Train Model on Balanced Data (After SMOTE)
+# -------------------------------------------------------------
+# Train a new Logistic Regression model using the SMOTE-resampled training data
+model_balanced = LogisticRegression()
+model_balanced.fit(X_resampled, y_resampled)
+# Predict using the original, unchanged test set
+y_pred_balanced = model_balanced.predict(X_test)
+print("\n----- MODEL PERFORMANCE (After SMOTE) -----")
+print(confusion_matrix(y_test, y_pred_balanced))
+print(classification_report(y_test, y_pred_balanced))
+
+# -------------------------------------------------------------
+# Step 7: Compare and Conclude
+# -------------------------------------------------------------
+print("\n----- OBSERVATIONS -----")
+print("""
+1. Before SMOTE: - The model was biased towards the majority class. - Minority class had low recall (many false negatives).
+2.After SMOTE: - The dataset became balanced. - The model learned better patterns for both classes. - Improved recall and F1-score for minority class.
+SMOTE helps improve fairness in predictions by balancing class representation.
+""")
