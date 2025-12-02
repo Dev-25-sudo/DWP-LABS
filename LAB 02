@@ -1,0 +1,57 @@
+import pandas as pd
+import numpy as np
+# Note: numpy is imported in the original notebook in cell 2 but is necessary for general data cleaning practices.
+
+# --- Cell 1: Creating and Saving Sample Data with Missing Values and Outliers ---
+# Create data as a dictionary with one missing value (None) and one outlier (200)
+data = {
+    "Name": ["Amit", "Neha", "Rahul", "Sneha", "Raj"],
+    "Age": [25, None, 35, 29, 200],   # None will be saved as blank/NaN
+    "Salary": [50000, 60000, None, 58000, 62000] # Another missing value
+}
+
+# Convert dictionary to DataFrame
+df = pd.DataFrame(data)
+
+# Save DataFrame to CSV file (index=False prevents writing the DataFrame index)
+df.to_csv("students1.csv", index=False)
+
+print("students1.csv file created successfully!")
+
+# --- Cell 2: Reading and Displaying the Original Data ---
+# Read the created CSV file back into a DataFrame
+df = pd.read_csv('students1.csv')
+print('Original Data:')
+print(df) # Display the DataFrame, showing NaN for missing values
+
+# --- Cell 3 (Execution Count 10): Handling Missing Values (Imputation) ---
+# Impute missing 'Age' values with the mean of the 'Age' column
+# Note: df['Age'].mean() calculates the mean of [25, 35, 29, 200] which is 72.25.
+# The calculation includes the outlier (200) before it is handled in the next cell.
+df['Age'].fillna(df['Age'].mean(), inplace=True)
+
+# Impute missing 'Salary' values with the median of the 'Salary' column
+# The existing salaries are [50000, 60000, 58000, 62000], so the median is 59000.
+df['Salary'].fillna(df['Salary'].median(), inplace=True)
+
+print('\nAfter Handling Missing Values:')
+print(df) # Display the DataFrame after imputation
+
+# --- Cell 4 (Execution Count 8): Handling Outliers ---
+# Calculate the median of the 'Age' column (after imputation, before outlier correction)
+# The ages are [25.0, 72.25, 35.0, 29.0, 200.0]. The median is 35.0.
+median_age = df['Age'].median()
+
+# Replace 'Age' values greater than 100 (the outlier 200.0) with the calculated median (35.0)
+df.loc[df['Age'] > 100, 'Age'] = median_age
+
+print('\nAfter Handling Outliers:')
+print(df) # Display the DataFrame after outlier correction
+
+# --- Cell 5 (Execution Count 9): Data Validation (Filtering) ---
+# Filter the DataFrame to keep only rows where 'Salary' is greater than 0
+# In this specific case, all salaries are already positive, so this step confirms validity.
+df = df[df['Salary'] > 0]
+
+print('\nAfter Data Validation:')
+print(df) # Display the DataFrame after validation/filtering
